@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Monitoring Tempat Sampah</title>
+  <script src="https://www.gstatic.com/firebasejs/8.0/firebase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Monitoring Sampah</h1>
+  <div>
+    <h2>Ketinggian: <span id="ketinggian">0</span>%</h2>
+    <h2>Gas: <span id="gas">0</span> ppm</h2>
+  </div>
+  <canvas id="gasChart" width="400" height="200"></canvas>
+
+  <script>
+    // Config Firebase
+    const firebaseConfig = {
+      apiKey: "API_KEY",
+      authDomain: "PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://PROJECT_ID.firebaseio.com",
+      projectId: "PROJECT_ID",
+      storageBucket: "PROJECT_ID.appspot.com",
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    // Ambil Data
+    const db = firebase.database();
+    db.ref("sampah").on("value", (snapshot) => {
+      const data = snapshot.val();
+      document.getElementById("ketinggian").textContent = data.ketinggian.toFixed(1);
+      document.getElementById("gas").textContent = data.gas;
+
+      // Update Chart (jika ada)
+      if (window.gasChart) {
+        window.gasChart.data.datasets[0].data.push(data.gas);
+        window.gasChart.update();
+      }
+    });
+
+    // Buat Grafik
+    const ctx = document.getElementById('gasChart').getContext('2d');
+    window.gasChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: Array(10).fill(""),
+        datasets: [{
+          label: 'Tingkat Gas (ppm)',
+          data: [],
+          borderColor: 'red'
+        }]
+      }
+    });
+  </script>
+</body>
+</html>
