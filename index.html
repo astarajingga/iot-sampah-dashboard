@@ -1,57 +1,137 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Monitoring Tempat Sampah</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waste Management Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/8.0/firebase.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .bin-list {
+      grid-column: span 2;
+    }
+    .bin-item {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .bin-header {
+      font-weight: 500;
+      color: #666;
+    }
+    .status-online {
+      color: green;
+    }
+    .status-offline {
+      color: red;
+    }
+    .alarm-item {
+      padding: 8px 0;
+      color: #d32f2f;
+    }
+  </style>
 </head>
 <body>
-  <h1>Monitoring Sampah</h1>
-  <div>
-    <h2>Ketinggian: <span id="ketinggian">0</span>%</h2>
-    <h2>Gas: <span id="gas">0</span> ppm</h2>
+  <h1>Waste Management Administration</h1>
+  
+  <div class="container">
+    <!-- Section: Bins -->
+    <div class="card bin-list">
+      <h2>Bins</h2>
+      <div class="bin-item bin-header">
+        <span>Serial Number</span>
+        <span>Address</span>
+        <span>Connection</span>
+        <span>Fill Level</span>
+        <span>Battery Level</span>
+      </div>
+      <div id="bin-data">
+        <!-- Data akan diisi oleh JavaScript -->
+      </div>
+    </div>
+
+    <!-- Section: Alarms -->
+    <div class="card">
+      <h2>Alarms (Last 7 Days)</h2>
+      <div id="alarm-data">
+        <div class="alarm-item">
+          <strong>Low Battery</strong> - J39057003218 (21%)
+        </div>
+      </div>
+    </div>
+
+    <!-- Section: Sensor Details -->
+    <div class="card">
+      <h2>Sensor Details</h2>
+      <div id="sensor-details">
+        <p><strong>Address:</strong> Manhattan Beach Blvd. 1601</p>
+        <p><strong>Fill Level:</strong> <span id="sensor-fill">34%</span></p>
+        <p><strong>Battery:</strong> <span id="sensor-battery">60%</span></p>
+        <p><strong>Last Update:</strong> 17 May 2023 16:39</p>
+      </div>
+    </div>
   </div>
-  <canvas id="gasChart" width="400" height="200"></canvas>
 
   <script>
-    // Config Firebase
+    // Firebase Config (Ganti dengan milik Anda)
     const firebaseConfig = {
-      apiKey: "API_KEY",
-      authDomain: "PROJECT_ID.firebaseapp.com",
-      databaseURL: "https://PROJECT_ID.firebaseio.com",
-      projectId: "PROJECT_ID",
-      storageBucket: "PROJECT_ID.appspot.com",
-      messagingSenderId: "SENDER_ID",
-      appId: "APP_ID"
+      apiKey: "AIzaSyABC...",
+      authDomain: "your-project.firebaseapp.com",
+      databaseURL: "https://your-project.firebaseio.com",
+      projectId: "your-project",
+      storageBucket: "your-project.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abc123def456"
     };
     firebase.initializeApp(firebaseConfig);
 
-    // Ambil Data
+    // Ambil Data dari Firebase
     const db = firebase.database();
-    db.ref("sampah").on("value", (snapshot) => {
-      const data = snapshot.val();
-      document.getElementById("ketinggian").textContent = data.ketinggian.toFixed(1);
-      document.getElementById("gas").textContent = data.gas;
-
-      // Update Chart (jika ada)
-      if (window.gasChart) {
-        window.gasChart.data.datasets[0].data.push(data.gas);
-        window.gasChart.update();
+    
+    // Update Daftar Tempat Sampah
+    db.ref("bins").on("value", (snapshot) => {
+      const bins = snapshot.val();
+      let html = '';
+      for (const [serial, data] of Object.entries(bins)) {
+        html += `
+          <div class="bin-item">
+            <span>${serial}</span>
+            <span>${data.address || 'N/A'}</span>
+            <span class="status-${data.connection ? 'online' : 'offline'}">
+              ${data.connection ? 'Online' : 'Offline'}
+            </span>
+            <span>${data.fillLevel}%</span>
+            <span>${data.batteryLevel}%</span>
+          </div>
+        `;
       }
+      document.getElementById("bin-data").innerHTML = html;
     });
 
-    // Buat Grafik
-    const ctx = document.getElementById('gasChart').getContext('2d');
-    window.gasChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: Array(10).fill(""),
-        datasets: [{
-          label: 'Tingkat Gas (ppm)',
-          data: [],
-          borderColor: 'red'
-        }]
-      }
+    // Update Sensor Tertentu
+    db.ref("sensors/389221001305").on("value", (snapshot) => {
+      const sensor = snapshot.val();
+      document.getElementById("sensor-fill").textContent = `${sensor.fillLevel}%`;
+      document.getElementById("sensor-battery").textContent = `${sensor.batteryLevel}%`;
     });
   </script>
 </body>
